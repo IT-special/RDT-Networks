@@ -130,17 +130,22 @@ class RDT:
             acknowledgement_packet = Packet.from_byte_S(resp[:message_length])
             if acknowledgement_packet.ack_status: # if not corrupt
 
-                if acknowledgement_packet.seq_num == self.seq_num and acknowledgement_packet.seq_num == 0: #right ACK
+                if acknowledgement_packet.seq_num == self.seq_num and acknowledgement_packet.msg_S == "0": #right ACK
                     print("Received ACK!")
                     self.seq_num = RDT.seq_num_alternation(self.seq_num)
                     break
 
-                elif acknowledgement_packet.seq_num == self.seq_num and acknowledgement_packet.seq_num == 1: # right NACK
+                elif acknowledgement_packet.seq_num == self.seq_num and acknowledgement_packet.msg_S == "1": # right NACK
                     print("Received NACK!")
+                    print("acknowledgement_packet.seq_num: ", acknowledgement_packet.seq_num)
+                    print("acknowledgement_packet.msg_S:", acknowledgement_packet.msg_S)
                     self.byte_buffer = ""
 
                 else: # received either an ACK or NACK with the wrong sequence number, or something else...
                     print("Received something weird... Considered a NACK")
+                    print("acknowledgement_packet.seq_num: ", acknowledgement_packet.seq_num)
+                    print("acknowledgement_packet.msg_S:", acknowledgement_packet.msg_S)
+
                     self.byte_buffer = ""
 
             else: # received a corrupt packet. Sender must resend another.
@@ -194,7 +199,7 @@ class RDT:
                 print("Message: " , p.msg_S)
 
                 # error when changing states
-                if p.msg_S == 0 or p.msg_S == 1: # checking if we need to change states
+                if p.msg_S == "0" or p.msg_S == "1": # checking if we need to change states
                     print("Staying in the same state.")
                     self.byte_buffer = self.byte_buffer[length:]
                     continue
@@ -208,6 +213,8 @@ class RDT:
 
                 else:
                     print("\n|| ERROR in changing states ||\n")
+                    print("acknowledgement_packet.seq_num: ", p.seq_num)
+                    print("acknowledgement_packet.msg_S:", p.msg_S)
 
                 # will return message if not corrupt
                 return_message = p.msg_S if (return_message is None) else return_message + p.msg_S
