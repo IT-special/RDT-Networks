@@ -112,7 +112,7 @@ class RDT:
 
 
 
-    def rdt_2_1_send(self, msg_S):
+    def rdt_3_0_send(self, msg_S):
         # first part of the state manchine: send message with sequence number 0
         p = Packet(self.seq_num, msg_S, None)
 
@@ -179,7 +179,7 @@ class RDT:
         return seq_num
 
 
-    def rdt_2_1_receive(self):
+    def rdt_3_0_receive(self):
 
         return_message = None # the value we will return at the end of this function. (should be a message)
         message =""
@@ -257,12 +257,6 @@ class RDT:
         return return_message
 
 
-    def rdt_3_0_send(self, msg_S):
-        pass
-
-    def rdt_3_0_receive(self):
-        pass
-
 
 if __name__ == '__main__':
     parser =  argparse.ArgumentParser(description='RDT implementation.')
@@ -273,14 +267,14 @@ if __name__ == '__main__':
 
     rdt = RDT(args.role, args.server, args.port)
     if args.role == 'client':
-        rdt.rdt_2_1_send('MSG_FROM_CLIENT')
+        rdt.rdt_3_0_send('MSG_FROM_CLIENT')
         sleep(2)
-        print(rdt.rdt_2_1_receive())
+        print(rdt.rdt_3_0_receive())
         rdt.disconnect()
 
 
     else:
         sleep(1)
-        print(rdt.rdt_2_1_receive())
-        rdt.rdt_2_1_send('MSG_FROM_SERVER')
+        print(rdt.rdt_3_0_receive())
+        rdt.rdt_3_0_send('MSG_FROM_SERVER')
         rdt.disconnect()
