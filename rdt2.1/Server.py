@@ -39,7 +39,9 @@ if __name__ == '__main__':
         msg_S = rdt.rdt_3_0_receive()
 
         rep_msg_S = piglatinize(msg_S)
-        print('Converted %s \nto \n%s\n' % (msg_S, rep_msg_S))
+        print("\nMessage we want to convert: ", msg_S)
+        print("----------------------------")
+        print("Message converted: ", rep_msg_S)
         rdt.rdt_3_0_send(rep_msg_S)
 
     rdt.disconnect()
