@@ -135,19 +135,20 @@ class RDT:
 
                 if acknowledgement_packet.seq_num == self.seq_num and acknowledgement_packet.msg_S == "0": #right ACK
                     print("Received ACK!")
+                    print("Sequence number: ", acknowledgement_packet.seq_num, "\n")
                     self.seq_num = RDT.seq_num_alternation(self.seq_num)
                     break
 
                 elif acknowledgement_packet.seq_num == self.seq_num and acknowledgement_packet.msg_S == "1": # right NACK
                     print("Received NACK!")
-                    print("acknowledgement_packet.seq_num: ", acknowledgement_packet.seq_num)
-                    print("acknowledgement_packet.msg_S:", acknowledgement_packet.msg_S)
+                    print("Sequence number: ", acknowledgement_packet.seq_num, "\n")
                     self.byte_buffer = ""
 
                 else: # received either an ACK or NACK with the wrong sequence number, or something else...
-                    print("Received something weird... Considered a NACK\n")
-                    print("is a packet ? \n")
-                    actual_packet =acknowledgement_packet #takes care of ack nack corruption
+                    print("LOSS: Considered a NACK")
+                    print("TIMEOUT")
+                    actual_packet = acknowledgement_packet #takes care of ack nack corruption
+                    print("Sequence Number:", acknowledgement_packet.seq_num, "\n")
                     if actual_packet.ack_status:
                         acknowledgement_packet = Packet(actual_packet.seq_num, "0", None)#send ack
                         self.network.udt_send(acknowledgement_packet.get_byte_S())
@@ -155,14 +156,11 @@ class RDT:
                         acknowledgement_packet = Packet(actual_packet.seq_num, "1", None)#send nack
                         self.network.udt_send(acknowledgement_packet.get_byte_S())
 
-
-                    print("acknowledgement_packet.seq_num: ", acknowledgement_packet.seq_num)
-                    print("acknowledgement_packet.msg_S:", acknowledgement_packet.msg_S)
-
                     self.byte_buffer = ""
 
             else: # received a corrupt packet. Sender must resend another.
                 print("Packet is corrupt... Considered it a NACK")
+                print("Sequence number: ", acknowledgement_packet.seq_num)
                 self.byte_buffer = ""
 
     def seq_num_alternation(seq_num): # alternates the sequence numbers from 0 to 1
@@ -205,6 +203,7 @@ class RDT:
             if not p.ack_status: # if packet is corrupt
 
                 print("Packet is corrupt. Will send a NACK\n")
+                print("Sequence number: ", p.seq_num)
                 acknowledgement_packet = Packet(p.seq_num, "1", None)
                 self.network.udt_send(acknowledgement_packet.get_byte_S())
                 message =""
@@ -225,7 +224,6 @@ class RDT:
 
             else:
                 print("Packet is not corrupt. Packet is correct.\n")
-                print("Message: " , p.msg_S)
 
                 # error when changing states
                 if p.msg_S == "0" or p.msg_S == "1": # checking if we need to change states

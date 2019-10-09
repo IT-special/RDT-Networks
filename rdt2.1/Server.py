@@ -37,12 +37,9 @@ if __name__ == '__main__':
     rdt = RDT.RDT('server', None, args.port)
     while True:
         msg_S = rdt.rdt_3_0_receive()
-        print("server out of receive")
-        #convert and reply
+
         rep_msg_S = piglatinize(msg_S)
         print('Converted %s \nto \n%s\n' % (msg_S, rep_msg_S))
         rdt.rdt_3_0_send(rep_msg_S)
-        print("server out of send")
 
     rdt.disconnect()
-    print("A timeout of " + str(timeout) + " seconds have gone by. The server has disconnected.")
