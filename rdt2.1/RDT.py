@@ -86,7 +86,7 @@ class RDT:
 
         p = Packet(self.seq_num, msg_S, None)
         initial_seq = self.seq_num
-        print("Sequence number: ", self.seq_num)
+        print("Sequence number: ", self.seq_num%2)
 
         while initial_seq == self.seq_num:
             self.network.udt_send(p.get_byte_S())
