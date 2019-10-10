@@ -3,15 +3,12 @@ import argparse
 from time import sleep
 import hashlib
 
-# add ack field in object Packet
-# find out where the length is breaking
-
 class Packet:
-    ## the number of bytes used to store packet length
-    seq_num_S_length = 10
-    length_S_length = 10
-    ## length of md5 checksum in hex
-    checksum_length = 32
+
+    seq_num_S_length = 10 # length of the sequence number field
+    length_S_length = 10 # length of the length field
+
+    checksum_length = 32 # checksum length (HEX field)
 
     def __init__(self, seq_num, msg_S, ack):
         self.seq_num = seq_num
@@ -20,12 +17,14 @@ class Packet:
 
     @classmethod
     def from_byte_S(self, byte_S):
+
         if Packet.corrupt(byte_S):
-            #raise RuntimeError('Cannot initialize Packet: byte_S is corrupt')
-            return self(None,None,False)
+            return self(None, None, False) # returns essentially nothing if corrupt
+
         #extract the fields
         seq_num = int(byte_S[Packet.length_S_length : Packet.length_S_length+Packet.seq_num_S_length])
         msg_S = byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length :]
+
         return self(seq_num, msg_S, True) # ack is right (not corrupt)
 
     # computes the various values that we need for each packet (sequence_num, checksum, length...)
@@ -58,41 +57,14 @@ class Packet:
 
 class RDT:
 
-    seq_num = 0
-    byte_buffer = ''
+    seq_num = 0 # starts with sequence number 0
+    byte_buffer = '' # starts with empty buffer
 
     def __init__(self, role_S, server_S, port):
         self.network = Network.NetworkLayer(role_S, server_S, port)
 
     def disconnect(self):
         self.network.disconnect()
-
-    def rdt_1_0_send(self, msg_S):
-        p = Packet(self.seq_num, msg_S)
-        self.seq_num += 1
-        self.network.udt_send(p.get_byte_S())
-
-    def rdt_1_0_receive(self):
-        return_message = None
-        byte_S = self.network.udt_receive()
-        self.byte_buffer += byte_S
-        #keep extracting packets - if reordered, could get more than one
-        while True:
-            #check if we have received enough bytes
-            if(len(self.byte_buffer) < Packet.length_S_length):
-                return return_message #not enough bytes to read packet length
-            #extract length of packet
-            length = int(self.byte_buffer[:Packet.length_S_length])
-            if len(self.byte_buffer) < length:
-                return return_message #not enough bytes to read the whole packet
-            #create packet from buffer content and add to return string
-            p = Packet.from_byte_S(self.byte_buffer[0:length])
-            return_message = p.msg_S if (return_message is None) else return_message + p.msg_S
-            #remove the packet bytes from the buffer
-            self.byte_buffer = self.byte_buffer[length:]
-            #if this was the last packet, will return on the next iteration
-
-
 
 # What is there to do for rdt 2.1 send?
 # - it needs to be able to send packets to the receiver.
@@ -139,6 +111,7 @@ class RDT:
                     self.seq_num += 1
                     print("ACK Received.")
                     print("Sequence Number: ", self.seq_num%2)
+
                 elif resp_p.msg_S is "0":
                     self.byte_buffer = ''
                     print("NACK received")
@@ -149,11 +122,11 @@ class RDT:
 
 
     def rdt_2_1_receive(self):
+
         return_message = None
         message = self.network.udt_receive()
         self.byte_buffer += message
         initial_seq_num = self.seq_num
-
 
         while initial_seq_num == self.seq_num:
 
@@ -161,6 +134,7 @@ class RDT:
                 break
 
             length = int(self.byte_buffer[:Packet.length_S_length])
+
             if len(self.byte_buffer) < length:
                 break
 

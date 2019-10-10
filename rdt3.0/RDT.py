@@ -3,15 +3,12 @@ import argparse
 from time import sleep
 import hashlib
 
-# add ack field in object Packet
-# find out where the length is breaking
-
 class Packet:
-    ## the number of bytes used to store packet length
-    seq_num_S_length = 10
-    length_S_length = 10
-    ## length of md5 checksum in hex
-    checksum_length = 32
+
+    seq_num_S_length = 10 # length of the sequence number field
+    length_S_length = 10 # length of the length field
+
+    checksum_length = 32 # checksum length (HEX field)
 
     def __init__(self, seq_num, msg_S, ack):
         self.seq_num = seq_num
@@ -20,12 +17,14 @@ class Packet:
 
     @classmethod
     def from_byte_S(self, byte_S):
+
         if Packet.corrupt(byte_S):
-            #raise RuntimeError('Cannot initialize Packet: byte_S is corrupt')
-            return self(None,None,False)
-        #extract the fields
+            return self(None,None,False) # returns essentially nothing if corrupt
+
+
         seq_num = int(byte_S[Packet.length_S_length : Packet.length_S_length+Packet.seq_num_S_length])
         msg_S = byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length :]
+
         return self(seq_num, msg_S, True) # ack is right (not corrupt)
 
     # computes the various values that we need for each packet (sequence_num, checksum, length...)
@@ -58,8 +57,8 @@ class Packet:
 
 class RDT:
 
-    seq_num = 0
-    byte_buffer = ''
+    seq_num = 0 # starts with sequence number 0
+    byte_buffer = '' # starts with empty buffer
 
     def __init__(self, role_S, server_S, port):
         self.network = Network.NetworkLayer(role_S, server_S, port)
@@ -100,22 +99,25 @@ class RDT:
                     print("Sequence number: ", acknowledgement_packet.seq_num, "\n")
                     self.byte_buffer = ""
 
-                else: # received either an ACK or NACK with the wrong sequence number, or something else...
+                else:
+                    timeout = True
                     print("LOSS")
                     print("TIMEOUT")
-                    actual_packet = acknowledgement_packet #takes care of ack nack corruption
+                    actual_packet = acknowledgement_packet # takes care of ack nack corruption
                     print("Sequence Number:", acknowledgement_packet.seq_num, "\n")
+
                     if actual_packet.ack_status:
-                        acknowledgement_packet = Packet(actual_packet.seq_num, "0", None)#send ack
+                        acknowledgement_packet = Packet(actual_packet.seq_num, "0", None) # send ack
                         self.network.udt_send(acknowledgement_packet.get_byte_S())
+
                     elif not actual_packet.ack_status:
-                        acknowledgement_packet = Packet(actual_packet.seq_num, "1", None)#send nack
+                        acknowledgement_packet = Packet(actual_packet.seq_num, "1", None) # send nack
                         self.network.udt_send(acknowledgement_packet.get_byte_S())
 
                     self.byte_buffer = ""
 
             else: # received a corrupt packet. Sender must resend another.
-                print("Packet is corrupt... Considered it a NACK")
+                print("Packet is corrupt...")
                 print("Sequence number: ", acknowledgement_packet.seq_num)
                 self.byte_buffer = ""
 
@@ -137,11 +139,11 @@ class RDT:
 
         return_message = None # the value we will return at the end of this function. (should be a message)
         message =""
+
         while message =="":
             message = self.network.udt_receive() # receive the packet with the message
+
         self.byte_buffer += message # add the message from the packet to the buffer
-
-
 
         while True: # infinite loop until we break out
 
@@ -163,8 +165,10 @@ class RDT:
                 acknowledgement_packet = Packet(p.seq_num, "1", None)
                 self.network.udt_send(acknowledgement_packet.get_byte_S())
                 message =""
+
                 while message =="":
                     message = self.network.udt_receive() # receive the packet with the message
+
                 self.byte_buffer = ""
                 self.byte_buffer += message
 
@@ -175,15 +179,14 @@ class RDT:
 
                 if len(self.byte_buffer) < length: # if the length is not right, break
                     break
-                p = Packet.from_byte_S(self.byte_buffer[0:length])
 
+                p = Packet.from_byte_S(self.byte_buffer[0:length])
 
             else:
                 print("Packet is not corrupt. Packet is correct.\n")
 
                 # error when changing states
                 if p.msg_S == "0" or p.msg_S == "1": # checking if we need to change states
-                    print("Staying in the same state.")
                     self.byte_buffer = self.byte_buffer[length:]
                     continue
 
@@ -201,6 +204,7 @@ class RDT:
 
         if p is None:
             return None
+            
         return_message = p.msg_S if (return_message is None) else return_message + p.msg_S
         return return_message
 
